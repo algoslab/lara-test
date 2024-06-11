@@ -3,5 +3,5 @@
 3. create database "lara-test"
 4. rename .env.example to .env
 5. SET DB_DATABASE=lara-test
-6. php artisan:migrate
+6. php artisan migrate
 7. php artisan serve
