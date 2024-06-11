@@ -11,6 +11,25 @@ use App\Models\User;
 
 class TransactionsController extends Controller
 {
+
+    public function withdrawal_fee($user_type, $amount){
+        if(date("l") != "Friday"){
+            if($user_type == 'Individual'){
+                $fee = 0.015; //percent
+            }elseif($user_type == 'Business'){
+                $fee = 0.025; //percent
+            }else{
+                echo "Something Wrong. Can't proceed!"; exit();
+            }
+        }else{
+            $fee = 0.00; //percent
+        }
+        
+
+        $max_fee = ($fee * $amount)/100;
+
+        return $max_fee;
+    }
     public function transactions(){
 
         $user = User::find(Auth::user()->id);
@@ -47,17 +66,26 @@ class TransactionsController extends Controller
        $data = $request->validate([
             'amount' => 'required'
         ]);
+
+
+
         $data['user_id'] = Auth::user()->id;
         $data['transaction_type'] = 'withdrawal';
-        $data['fee'] = 0.00; //Fee applies
+        $data['fee'] = $this->withdrawal_fee(Auth::user()->account_type, $data['amount']); //Fee applies
         $data['date'] = date('Y-m-d');
 
+        //dd($data);
 
 
-        Transaction::create($data);
         $user = User::find(Auth::user()->id);
-        $total = $user->balance - $data['amount'];
-        $user->update(['balance' => $total]);
+        $current_balance = $user->balance - ($data['amount'] + $data['fee']);
+        if($current_balance < 0){
+            echo "Not Enough Balance!"; exit();
+        }else{
+            Transaction::create($data);
+            $user->update(['balance' => $current_balance]);
+        }
+        
         return redirect()->back();
     }
 }
